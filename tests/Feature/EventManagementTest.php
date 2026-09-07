@@ -253,4 +253,129 @@ class EventManagementTest extends TestCase
         $deleteResponse->assertRedirect(route('organizer.events.index'));
         $this->assertDatabaseMissing('events', ['id' => $event->id]);
     }
+
+    public function test_required_event_creation_fields_are_validated(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        $response = $this->actingAs($organizer)->post(route('organizer.events.store'), []);
+
+        $response->assertSessionHasErrors(['title', 'start_date', 'end_date', 'status']);
+    }
+
+    public function test_event_creation_rejects_invalid_status(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        $response = $this->actingAs($organizer)->post(route('organizer.events.store'), [
+            'title' => 'Invalid Status Event',
+            'start_date' => now()->addDays(2)->format('Y-m-d H:i'),
+            'end_date' => now()->addDays(2)->addHours(2)->format('Y-m-d H:i'),
+            'status' => 'bogus_status',
+        ]);
+
+        $response->assertSessionHasErrors('status');
+    }
+
+    public function test_participant_cannot_delete_event(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->create();
+
+        $response = $this->actingAs($participant)->delete(route('organizer.events.destroy', $event));
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('events', ['id' => $event->id]);
+    }
+
+    public function test_draft_events_behave_correctly(): void
+    {
+        $draftEvent = Event::factory()->draft()->create(['title' => 'Unpublished Draft']);
+
+        $this->assertFalse($draftEvent->isPublished());
+        $this->assertFalse($draftEvent->isRegistrationOpen());
+
+        $catalogResponse = $this->get(route('events.index'));
+        $catalogResponse->assertDontSee('Unpublished Draft');
+
+        $detailResponse = $this->get(route('events.show', $draftEvent));
+        $detailResponse->assertStatus(403);
+    }
+
+    public function test_published_events_behave_correctly(): void
+    {
+        $publishedEvent = Event::factory()->published()->create(['title' => 'Open Conference']);
+
+        $this->assertTrue($publishedEvent->isPublished());
+        $this->assertTrue($publishedEvent->isRegistrationOpen());
+
+        $catalogResponse = $this->get(route('events.index'));
+        $catalogResponse->assertSee('Open Conference');
+
+        $detailResponse = $this->get(route('events.show', $publishedEvent));
+        $detailResponse->assertStatus(200);
+        $detailResponse->assertSee('Open Conference');
+    }
+
+    public function test_cancelled_events_behave_correctly(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $event = Event::factory()->create([
+            'organizer_id' => $organizer->id,
+            'status' => EventStatus::Published,
+        ]);
+
+        $this->assertTrue($event->isRegistrationOpen());
+
+        // Organizer updates status to cancelled
+        $response = $this->actingAs($organizer)->put(route('organizer.events.update', $event), [
+            'title' => $event->title,
+            'start_date' => $event->start_date->format('Y-m-d H:i'),
+            'end_date' => $event->end_date->format('Y-m-d H:i'),
+            'status' => EventStatus::Cancelled->value,
+        ]);
+
+        $response->assertRedirect(route('organizer.events.index'));
+        $this->assertFalse($event->fresh()->isRegistrationOpen());
+        $this->assertEquals(EventStatus::Cancelled, $event->fresh()->status);
+    }
+
+    public function test_completed_events_behave_correctly(): void
+    {
+        $event = Event::factory()->create(['status' => EventStatus::Completed]);
+
+        $this->assertFalse($event->isPublished());
+        $this->assertFalse($event->isRegistrationOpen());
+        $this->assertEquals(EventStatus::Completed, $event->status);
+    }
+
+    public function test_validation_cannot_be_bypassed_via_direct_post(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        $response = $this->actingAs($organizer)->postJson(route('organizer.events.store'), [
+            'title' => '',
+            'start_date' => 'invalid-date',
+            'end_date' => 'invalid-date',
+            'status' => 'hack',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['title', 'start_date', 'end_date', 'status']);
+    }
+
+    public function test_authorization_is_enforced_server_side_on_event_creation(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $response = $this->actingAs($participant)->post(route('organizer.events.store'), [
+            'title' => 'Participant Event',
+            'start_date' => now()->addDays(1)->format('Y-m-d H:i'),
+            'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i'),
+            'status' => EventStatus::Published->value,
+        ]);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseMissing('events', ['title' => 'Participant Event']);
+    }
 }

@@ -196,4 +196,56 @@ class AuthorizationTest extends TestCase
         $this->assertNotNull($user);
         $this->assertEquals(UserRole::Organizer, $user->role);
     }
+
+    public function test_guest_accessing_protected_url_manually_is_redirected_to_login(): void
+    {
+        $this->get('/organizer/events')->assertRedirect('/login');
+        $this->get('/organizer/events/create')->assertRedirect('/login');
+        $this->get('/dashboard')->assertRedirect('/login');
+    }
+
+    public function test_participant_accessing_organizer_url_manually_receives_403_forbidden(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $this->actingAs($participant)->get('/organizer/events')->assertStatus(403);
+        $this->actingAs($participant)->get('/organizer/events/create')->assertStatus(403);
+    }
+
+    public function test_organizer_accessing_another_organizers_edit_url_receives_403_forbidden(): void
+    {
+        $organizer1 = User::factory()->organizer()->create();
+        $organizer2 = User::factory()->organizer()->create();
+        $event = Event::factory()->create(['organizer_id' => $organizer1->id]);
+
+        $this->actingAs($organizer2)->get(route('organizer.events.edit', $event))->assertStatus(403);
+        $this->actingAs($organizer2)->put(route('organizer.events.update', $event), [
+            'title' => 'Tampered Title',
+            'start_date' => now()->addDays(5)->format('Y-m-d H:i'),
+            'end_date' => now()->addDays(5)->addHours(2)->format('Y-m-d H:i'),
+            'status' => 'published',
+        ])->assertStatus(403);
+        $this->actingAs($organizer2)->delete(route('organizer.events.destroy', $event))->assertStatus(403);
+    }
+
+    public function test_admin_can_access_organizer_functionality_and_manage_any_event(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $organizer = User::factory()->organizer()->create();
+        $event = Event::factory()->create(['organizer_id' => $organizer->id]);
+
+        $this->actingAs($admin)->get(route('organizer.events.index'))->assertStatus(200);
+        $this->actingAs($admin)->get(route('organizer.events.edit', $event))->assertStatus(200);
+    }
+
+    public function test_participant_can_access_participant_functionality(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $publishedEvent = Event::factory()->published()->create();
+
+        $this->actingAs($participant)->get(route('events.index'))->assertStatus(200);
+        $this->actingAs($participant)->get(route('events.show', $publishedEvent))->assertStatus(200);
+        $this->actingAs($participant)->get(route('dashboard'))->assertStatus(200);
+        $this->actingAs($participant)->get(route('profile.edit'))->assertStatus(200);
+    }
 }

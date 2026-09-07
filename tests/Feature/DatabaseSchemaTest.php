@@ -12,6 +12,7 @@ use App\Models\TicketType;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class DatabaseSchemaTest extends TestCase
@@ -152,5 +153,61 @@ class DatabaseSchemaTest extends TestCase
         $this->assertDatabaseMissing('ticket_types', ['id' => $ticket->id]);
         $this->assertDatabaseMissing('registrations', ['id' => $registration->id]);
         $this->assertDatabaseMissing('check_ins', ['id' => $checkIn->id]);
+    }
+
+    public function test_not_null_and_unique_constraints_are_enforced(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+
+        // Unique slug test
+        Event::factory()->create(['slug' => 'unique-conference-slug']);
+
+        $this->expectException(QueryException::class);
+        Event::factory()->create([
+            'organizer_id' => $organizer->id,
+            'slug' => 'unique-conference-slug',
+        ]);
+    }
+
+    public function test_unique_registration_code_constraint_is_enforced(): void
+    {
+        $registration1 = Registration::factory()->create();
+
+        $this->expectException(QueryException::class);
+        Registration::factory()->create([
+            'registration_code' => $registration1->registration_code,
+        ]);
+    }
+
+    public function test_schema_indexes_and_foreign_keys_are_configured(): void
+    {
+        $eventIndexes = collect(Schema::getIndexes('events'))->pluck('columns')->flatten()->all();
+        $this->assertContains('slug', $eventIndexes);
+        $this->assertContains('status', $eventIndexes);
+        $this->assertContains('start_date', $eventIndexes);
+
+        $registrationIndexes = collect(Schema::getIndexes('registrations'))->pluck('columns')->flatten()->all();
+        $this->assertContains('registration_code', $registrationIndexes);
+        $this->assertContains('status', $registrationIndexes);
+        $this->assertContains('user_id', $registrationIndexes);
+        $this->assertContains('event_id', $registrationIndexes);
+
+        $checkInIndexes = collect(Schema::getIndexes('check_ins'))->pluck('columns')->flatten()->all();
+        $this->assertContains('registration_id', $checkInIndexes);
+
+        $eventForeignKeys = collect(Schema::getForeignKeys('events'))->pluck('foreign_table')->all();
+        $this->assertContains('users', $eventForeignKeys);
+
+        $ticketForeignKeys = collect(Schema::getForeignKeys('ticket_types'))->pluck('foreign_table')->all();
+        $this->assertContains('events', $ticketForeignKeys);
+
+        $registrationForeignKeys = collect(Schema::getForeignKeys('registrations'))->pluck('foreign_table')->all();
+        $this->assertContains('users', $registrationForeignKeys);
+        $this->assertContains('events', $registrationForeignKeys);
+        $this->assertContains('ticket_types', $registrationForeignKeys);
+
+        $checkInForeignKeys = collect(Schema::getForeignKeys('check_ins'))->pluck('foreign_table')->all();
+        $this->assertContains('registrations', $checkInForeignKeys);
+        $this->assertContains('users', $checkInForeignKeys);
     }
 }

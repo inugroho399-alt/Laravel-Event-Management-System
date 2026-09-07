@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -71,5 +72,41 @@ class RegistrationTest extends TestCase
 
         $response->assertSessionHasErrors('password');
         $this->assertGuest();
+    }
+
+    public function test_required_registration_fields_are_validated(): void
+    {
+        $response = $this->post('/register', []);
+
+        $response->assertSessionHasErrors(['name', 'email', 'password']);
+        $this->assertGuest();
+    }
+
+    public function test_password_minimum_length_is_enforced(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Test User',
+            'email' => 'shortpass@example.com',
+            'password' => '123',
+            'password_confirmation' => '123',
+        ]);
+
+        $response->assertSessionHasErrors('password');
+        $this->assertGuest();
+    }
+
+    public function test_passwords_are_stored_securely_in_database_upon_registration(): void
+    {
+        $this->post('/register', [
+            'name' => 'Secure User',
+            'email' => 'secure@example.com',
+            'password' => 'secure-password-123',
+            'password_confirmation' => 'secure-password-123',
+        ]);
+
+        $user = User::where('email', 'secure@example.com')->first();
+        $this->assertNotNull($user);
+        $this->assertNotEquals('secure-password-123', $user->password);
+        $this->assertTrue(Hash::check('secure-password-123', $user->password));
     }
 }
