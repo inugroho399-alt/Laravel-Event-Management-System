@@ -22,3 +22,12 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# AI assistant & tool configurations
+/.agents
+/.claude
+/.codex
+/.mcp.json
+/CLAUDE.md
+/AGENTS.md
+/boost.json
