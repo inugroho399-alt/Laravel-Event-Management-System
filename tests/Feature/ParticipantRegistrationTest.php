@@ -282,4 +282,260 @@ class ParticipantRegistrationTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_registration_stores_correct_event_participant_ticket_code_and_timestamp(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create([
+            'event_id' => $event->id,
+            'name' => 'Gold Pass',
+            'price' => 75.00,
+            'quota' => 25,
+        ]);
+
+        $beforeTime = now()->subSecond();
+
+        $response = $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+        ]);
+
+        $afterTime = now()->addSecond();
+
+        $response->assertRedirect(route('registrations.index'));
+
+        $registration = Registration::where('user_id', $participant->id)->first();
+        $this->assertNotNull($registration);
+
+        // 2. Correct event is stored
+        $this->assertEquals($event->id, $registration->event_id);
+        $this->assertTrue($registration->event->is($event));
+
+        // 3. Correct participant is stored
+        $this->assertEquals($participant->id, $registration->user_id);
+        $this->assertTrue($registration->user->is($participant));
+
+        // 4. Correct ticket type is stored
+        $this->assertEquals($ticket->id, $registration->ticket_type_id);
+        $this->assertTrue($registration->ticketType->is($ticket));
+
+        // 5. Registration code is generated
+        $this->assertMatchesRegularExpression('/^EVENT-REG-[A-Z0-9]{8}$/', $registration->registration_code);
+
+        // 6. Registration timestamp is stored
+        $this->assertNotNull($registration->created_at);
+        $this->assertTrue($registration->created_at->between($beforeTime, $afterTime));
+    }
+
+    public function test_registration_cannot_be_created_for_another_user_via_payload_tampering(): void
+    {
+        $attacker = User::factory()->participant()->create();
+        $victim = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id]);
+
+        $response = $this->actingAs($attacker)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+            'user_id' => $victim->id, // Attempt to forge registration for victim
+        ]);
+
+        $response->assertRedirect(route('registrations.index'));
+
+        // Assert registration was created for the authenticated attacker, NOT the victim
+        $this->assertDatabaseHas('registrations', [
+            'user_id' => $attacker->id,
+            'event_id' => $event->id,
+        ]);
+        $this->assertDatabaseMissing('registrations', [
+            'user_id' => $victim->id,
+            'event_id' => $event->id,
+        ]);
+    }
+
+    public function test_invalid_event_registration_is_rejected(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $ticket = TicketType::factory()->create();
+
+        // Non-existent event returns 404
+        $responseNonExistentEvent = $this->actingAs($participant)->post('/events/999999/register', [
+            'ticket_type_id' => $ticket->id,
+        ]);
+        $responseNonExistentEvent->assertStatus(404);
+
+        $event = Event::factory()->published()->create();
+
+        // Non-existent ticket_type_id fails validation
+        $responseInvalidTicket = $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => 999999,
+        ]);
+        $responseInvalidTicket->assertSessionHasErrors('ticket_type_id');
+
+        // Missing ticket_type_id fails validation
+        $responseMissingTicket = $this->actingAs($participant)->post(route('events.register', $event), []);
+        $responseMissingTicket->assertSessionHasErrors('ticket_type_id');
+    }
+
+    public function test_cancelled_and_completed_event_registrations_are_rejected(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        // Cancelled event
+        $cancelledEvent = Event::factory()->cancelled()->create();
+        $ticket1 = TicketType::factory()->create(['event_id' => $cancelledEvent->id]);
+
+        $responseCancelled = $this->actingAs($participant)->post(route('events.register', $cancelledEvent), [
+            'ticket_type_id' => $ticket1->id,
+        ]);
+        $responseCancelled->assertSessionHasErrors('error');
+        $this->assertDatabaseMissing('registrations', ['event_id' => $cancelledEvent->id]);
+
+        // Completed event
+        $completedEvent = Event::factory()->completed()->create();
+        $ticket2 = TicketType::factory()->create(['event_id' => $completedEvent->id]);
+
+        $responseCompleted = $this->actingAs($participant)->post(route('events.register', $completedEvent), [
+            'ticket_type_id' => $ticket2->id,
+        ]);
+        $responseCompleted->assertSessionHasErrors('error');
+        $this->assertDatabaseMissing('registrations', ['event_id' => $completedEvent->id]);
+    }
+
+    public function test_registration_database_relationships_are_fully_functional(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id]);
+
+        $registration = Registration::factory()->create([
+            'user_id' => $participant->id,
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'status' => RegistrationStatus::Confirmed,
+        ]);
+
+        // BelongsTo relationships
+        $this->assertInstanceOf(User::class, $registration->user);
+        $this->assertTrue($registration->user->is($participant));
+
+        $this->assertInstanceOf(Event::class, $registration->event);
+        $this->assertTrue($registration->event->is($event));
+
+        $this->assertInstanceOf(TicketType::class, $registration->ticketType);
+        $this->assertTrue($registration->ticketType->is($ticket));
+
+        // Inverse HasMany relationships
+        $this->assertTrue($participant->registrations->contains($registration));
+        $this->assertTrue($event->registrations->contains($registration));
+        $this->assertTrue($ticket->registrations->contains($registration));
+    }
+
+    public function test_participant_can_re_register_after_cancelling_prior_registration(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create([
+            'event_id' => $event->id,
+            'quota' => 5,
+        ]);
+
+        // Register first time
+        $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+        ])->assertRedirect(route('registrations.index'));
+
+        $firstReg = Registration::where('user_id', $participant->id)->first();
+        $this->assertEquals(RegistrationStatus::Confirmed, $firstReg->status);
+
+        // Cancel first registration
+        $this->actingAs($participant)->post(route('registrations.cancel', $firstReg));
+        $this->assertEquals(RegistrationStatus::Cancelled, $firstReg->fresh()->status);
+        $this->assertEquals(5, $ticket->fresh()->remainingQuota());
+
+        // Re-register for the same event
+        $secondResponse = $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+        ]);
+        $secondResponse->assertRedirect(route('registrations.index'));
+
+        // Should now have 2 registration records: 1 cancelled and 1 confirmed
+        $this->assertCount(2, Registration::where('user_id', $participant->id)->get());
+        $activeReg = Registration::where('user_id', $participant->id)
+            ->where('status', RegistrationStatus::Confirmed)
+            ->first();
+        $this->assertNotNull($activeReg);
+        $this->assertNotEquals($firstReg->registration_code, $activeReg->registration_code);
+        $this->assertEquals(4, $ticket->fresh()->remainingQuota());
+    }
+
+    public function test_registration_is_transactional_and_rolls_back_on_failure(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create([
+            'event_id' => $event->id,
+            'quota' => 10,
+        ]);
+
+        // Attach a failing model event listener to simulate unexpected crash inside DB::transaction
+        Registration::saving(function () {
+            throw new \RuntimeException('Simulated unexpected failure during registration transaction.');
+        });
+
+        try {
+            $this->actingAs($participant)->post(route('events.register', $event), [
+                'ticket_type_id' => $ticket->id,
+            ]);
+        } catch (\RuntimeException $e) {
+            // Expected exception thrown
+        }
+
+        // Verify that no registration was persisted and quota remains unaffected
+        $this->assertDatabaseEmpty('registrations');
+        $this->assertEquals(10, $ticket->fresh()->remainingQuota());
+
+        // Clear listeners for subsequent tests
+        Registration::flushEventListeners();
+    }
+
+    public function test_complete_participant_registration_flow_from_event_detail_to_my_registrations(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create([
+            'title' => 'DevFest Global 2026',
+            'slug' => 'devfest-global-2026',
+        ]);
+        $ticket = TicketType::factory()->create([
+            'event_id' => $event->id,
+            'name' => 'Full Conference Pass',
+            'price' => 120.00,
+            'quota' => 50,
+        ]);
+
+        // Step 1: Participant views event detail
+        $detailResponse = $this->actingAs($participant)->get(route('events.show', $event->slug));
+        $detailResponse->assertStatus(200);
+        $detailResponse->assertSee('DevFest Global 2026');
+        $detailResponse->assertSee('Full Conference Pass');
+        $detailResponse->assertSee('$120.00');
+        $detailResponse->assertSee('Register Now');
+
+        // Step 2: Participant selects ticket and registers
+        $registerResponse = $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+        ]);
+        $registerResponse->assertRedirect(route('registrations.index'));
+        $registerResponse->assertSessionHas('status', 'Registration successful! You have secured your ticket.');
+
+        // Step 3: Registration created and visible in My Registrations
+        $registration = Registration::where('user_id', $participant->id)->first();
+        $this->assertNotNull($registration);
+
+        $myRegistrationsResponse = $this->actingAs($participant)->get(route('registrations.index'));
+        $myRegistrationsResponse->assertStatus(200);
+        $myRegistrationsResponse->assertSee('DevFest Global 2026');
+        $myRegistrationsResponse->assertSee('Full Conference Pass');
+        $myRegistrationsResponse->assertSee($registration->registration_code);
+        $myRegistrationsResponse->assertSee('Confirmed');
+    }
 }
