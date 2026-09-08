@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Organizer\CheckInController as OrganizerCheckInController;
+use App\Http\Controllers\Organizer\DashboardController as OrganizerDashboardController;
 use App\Http\Controllers\Organizer\EventController as OrganizerEventController;
 use App\Http\Controllers\Organizer\RegistrationController as OrganizerRegistrationController;
 use App\Http\Controllers\Organizer\TicketTypeController as OrganizerTicketTypeController;
@@ -33,6 +34,7 @@ Route::middleware('auth')->group(function () {
 
 // Organizer Event, Ticket, Attendee, & Check-in Management
 Route::prefix('organizer')->name('organizer.')->middleware(['auth', 'role:organizer'])->group(function () {
+    Route::get('dashboard', [OrganizerDashboardController::class, 'index'])->name('dashboard');
     Route::resource('events', OrganizerEventController::class);
     Route::resource('events.tickets', OrganizerTicketTypeController::class)->parameters(['tickets' => 'ticket']);
     Route::get('events/{event}/registrations', [OrganizerRegistrationController::class, 'index'])->name('events.registrations.index');
