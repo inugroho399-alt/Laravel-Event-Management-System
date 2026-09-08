@@ -300,4 +300,97 @@ class TicketManagementTest extends TestCase
         $response->assertSee('Super Early Bird');
         $response->assertSee('Sold Out');
     }
+
+    public function test_ticket_edge_cases_validation(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $event = Event::factory()->create(['organizer_id' => $organizer->id]);
+
+        // Case 1: Missing name
+        $responseMissingName = $this->actingAs($organizer)->post(route('organizer.events.tickets.store', $event), [
+            'price' => 10,
+            'quota' => 10,
+        ]);
+        $responseMissingName->assertSessionHasErrors('name');
+
+        // Case 2: Quota = 0
+        $responseZeroQuota = $this->actingAs($organizer)->post(route('organizer.events.tickets.store', $event), [
+            'name' => 'Zero Quota Tier',
+            'price' => 10,
+            'quota' => 0,
+        ]);
+        $responseZeroQuota->assertSessionHasErrors('quota');
+
+        // Case 3: Negative quota
+        $responseNegativeQuota = $this->actingAs($organizer)->post(route('organizer.events.tickets.store', $event), [
+            'name' => 'Negative Quota Tier',
+            'price' => 10,
+            'quota' => -5,
+        ]);
+        $responseNegativeQuota->assertSessionHasErrors('quota');
+
+        // Case 4: Negative price
+        $responseNegativePrice = $this->actingAs($organizer)->post(route('organizer.events.tickets.store', $event), [
+            'name' => 'Negative Price Tier',
+            'price' => -25.50,
+            'quota' => 50,
+        ]);
+        $responseNegativePrice->assertSessionHasErrors('price');
+    }
+
+    public function test_ticket_cannot_belong_to_or_be_manipulated_via_invalid_event(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $event1 = Event::factory()->create(['organizer_id' => $organizer->id]);
+        $event2 = Event::factory()->create(['organizer_id' => $organizer->id]);
+        $ticket1 = TicketType::factory()->create(['event_id' => $event1->id]);
+
+        // Accessing with non-existent event ID
+        $responseNonExistent = $this->actingAs($organizer)->get('/organizer/events/99999/tickets');
+        $responseNonExistent->assertStatus(404);
+
+        // Mismatched event and ticket IDs (ticket belongs to event 1, but URL specifies event 2)
+        $responseMismatch = $this->actingAs($organizer)->get(route('organizer.events.tickets.edit', [$event2, $ticket1]));
+        $responseMismatch->assertStatus(404);
+
+        $responseUpdateMismatch = $this->actingAs($organizer)->put(route('organizer.events.tickets.update', [$event2, $ticket1]), [
+            'name' => 'Mismatched Update',
+            'price' => 10,
+            'quota' => 10,
+        ]);
+        $responseUpdateMismatch->assertStatus(404);
+
+        $responseDeleteMismatch = $this->actingAs($organizer)->delete(route('organizer.events.tickets.destroy', [$event2, $ticket1]));
+        $responseDeleteMismatch->assertStatus(404);
+    }
+
+    public function test_ticket_relationships_and_quota_calculations(): void
+    {
+        $event = Event::factory()->create();
+        $ticket = TicketType::factory()->create([
+            'event_id' => $event->id,
+            'quota' => 5,
+        ]);
+
+        // Verify belongsTo relationship
+        $this->assertEquals($event->id, $ticket->event->id);
+        $this->assertTrue($event->ticketTypes->contains($ticket));
+
+        // Create 2 confirmed registrations and 1 cancelled registration
+        Registration::factory()->count(2)->create([
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'status' => RegistrationStatus::Confirmed,
+        ]);
+        Registration::factory()->create([
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'status' => RegistrationStatus::Cancelled,
+        ]);
+
+        // Remaining quota should be 5 - 2 = 3 (cancelled registrations do not consume quota)
+        $this->assertEquals(3, $ticket->fresh()->remainingQuota());
+        $this->assertFalse($ticket->fresh()->isSoldOut());
+        $this->assertCount(3, $ticket->fresh()->registrations);
+    }
 }
