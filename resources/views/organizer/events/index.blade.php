@@ -55,18 +55,7 @@
                                             <div class="text-gray-400">{{ $event->start_date->format('h:i A') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            @php
-                                                $statusClasses = match($event->status) {
-                                                    \App\Enums\EventStatus::Published => 'bg-emerald-100 text-emerald-800',
-                                                    \App\Enums\EventStatus::Ongoing => 'bg-amber-100 text-amber-800',
-                                                    \App\Enums\EventStatus::Completed => 'bg-blue-100 text-blue-800',
-                                                    \App\Enums\EventStatus::Cancelled => 'bg-red-100 text-red-800',
-                                                    default => 'bg-gray-100 text-gray-800',
-                                                };
-                                            @endphp
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-medium {{ $statusClasses }}">
-                                                {{ $event->status->label() }}
-                                            </span>
+                                            <x-status-badge :status="$event->status" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-gray-600">
                                             {{ $event->ticket_types_count }}

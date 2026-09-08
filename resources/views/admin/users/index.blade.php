@@ -97,16 +97,7 @@
                                             <div class="text-xs text-gray-400">{{ $u->email }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            @php
-                                                $roleClass = match ($u->role) {
-                                                    \App\Enums\UserRole::Admin       => 'bg-purple-100 text-purple-800',
-                                                    \App\Enums\UserRole::Organizer   => 'bg-indigo-100 text-indigo-800',
-                                                    \App\Enums\UserRole::Participant => 'bg-gray-100 text-gray-800',
-                                                };
-                                            @endphp
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $roleClass }}">
-                                                {{ $u->role->label() }}
-                                            </span>
+                                            <x-status-badge :status="$u->role" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center text-gray-700 font-medium">
                                             {{ number_format($u->events_count) }}

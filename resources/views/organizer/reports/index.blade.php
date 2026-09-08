@@ -159,15 +159,6 @@
                             </thead>
                             <tbody class="divide-y divide-gray-50 bg-white">
                                 @foreach ($events as $event)
-                                    @php
-                                        $statusClass = match ($event->status) {
-                                            \App\Enums\EventStatus::Published => 'bg-emerald-100 text-emerald-800',
-                                            \App\Enums\EventStatus::Ongoing   => 'bg-amber-100 text-amber-800',
-                                            \App\Enums\EventStatus::Completed => 'bg-blue-100 text-blue-800',
-                                            \App\Enums\EventStatus::Cancelled => 'bg-red-100 text-red-800',
-                                            default => 'bg-gray-100 text-gray-800',
-                                        };
-                                    @endphp
                                     <tr class="hover:bg-gray-50/50 transition-colors">
                                         <td class="px-6 py-4">
                                             <a href="{{ route('organizer.events.reports.show', $event) }}" class="font-semibold text-gray-900 hover:text-indigo-600 transition">
@@ -180,9 +171,7 @@
                                             <div class="text-gray-400">{{ $event->start_date?->format('h:i A') }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
-                                                {{ $event->status->label() }}
-                                            </span>
+                                            <x-status-badge :status="$event->status" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center text-gray-700 font-medium">
                                             {{ number_format($event->total_capacity) }}

@@ -74,13 +74,6 @@
                             </thead>
                             <tbody class="divide-y divide-gray-50 bg-white">
                                 @foreach ($registrations as $reg)
-                                    @php
-                                        $statusClass = match ($reg->status) {
-                                            \App\Enums\RegistrationStatus::Confirmed => 'bg-indigo-50 text-indigo-700',
-                                            \App\Enums\RegistrationStatus::Attended  => 'bg-emerald-50 text-emerald-700',
-                                            \App\Enums\RegistrationStatus::Cancelled => 'bg-rose-50 text-rose-700',
-                                        };
-                                    @endphp
                                     <tr class="hover:bg-gray-50/50 transition-colors">
                                         <td class="px-6 py-4">
                                             <div class="font-mono font-bold text-xs text-indigo-600">{{ $reg->registration_code }}</div>
@@ -98,9 +91,7 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-center">
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
-                                                {{ $reg->status->label() }}
-                                            </span>
+                                            <x-status-badge :status="$reg->status" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                                             @if ($reg->checkIn)

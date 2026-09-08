@@ -29,7 +29,111 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row gap-8">
+
+                {{-- ── MODERN ADMIN SIDEBAR NAVIGATION ─────────────────────────── --}}
+                <aside class="w-full lg:w-64 shrink-0" x-data="{ mobileNavOpen: false }">
+                    <!-- Mobile Drawer Toggle -->
+                    <div class="lg:hidden mb-4 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-purple-600 animate-pulse"></span>
+                                <span class="font-bold text-sm text-slate-900">Admin Control</span>
+                            </div>
+                            <button @click="mobileNavOpen = !mobileNavOpen" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 transition">
+                                <span x-text="mobileNavOpen ? 'Hide Menu' : 'Admin Menu'">Admin Menu</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': mobileNavOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Card Container -->
+                    <div :class="{ 'block': mobileNavOpen, 'hidden': !mobileNavOpen }" class="hidden lg:block space-y-6 sticky top-28">
+                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-6">
+                            <!-- Role & Workspace Identifier -->
+                            <div class="pb-4 border-b border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Platform</span>
+                                    <x-status-badge status="admin" size="sm" />
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-base truncate">{{ Auth::user()->name }}</h3>
+                                <p class="text-xs text-slate-500 truncate">{{ Auth::user()->email }}</p>
+                            </div>
+
+                            <!-- Navigation Links -->
+                            <nav class="space-y-1">
+                                <a href="{{ route('admin.dashboard') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('admin.dashboard') ? 'bg-purple-50 text-purple-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('admin.dashboard') ? 'text-purple-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    <span>Administrator Dashboard</span>
+                                </a>
+
+                                <a href="{{ route('admin.users.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('admin.users.*') ? 'bg-purple-50 text-purple-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('admin.users.*') ? 'text-purple-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                    </svg>
+                                    <span>Users</span>
+                                </a>
+
+                                <a href="{{ route('admin.events.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('admin.events.*') ? 'bg-purple-50 text-purple-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('admin.events.*') ? 'text-purple-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>All Events</span>
+                                </a>
+
+                                <a href="{{ route('admin.registrations.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('admin.registrations.*') ? 'bg-purple-50 text-purple-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('admin.registrations.*') ? 'text-purple-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                                    </svg>
+                                    <span>Registrations</span>
+                                </a>
+
+                                <a href="{{ route('organizer.reports.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('organizer.reports.*') ? 'bg-purple-50 text-purple-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('organizer.reports.*') ? 'text-purple-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/>
+                                    </svg>
+                                    <span>Reports</span>
+                                </a>
+
+                                <a href="{{ route('events.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <span>Discover Events</span>
+                                </a>
+                            </nav>
+
+                            <!-- Mini Summary Widget -->
+                            <div class="pt-4 border-t border-slate-100 bg-slate-50/70 -mx-5 -mb-5 p-5 rounded-b-2xl">
+                                <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">System Snapshot</div>
+                                <div class="grid grid-cols-2 gap-2 text-center">
+                                    <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                        <div class="text-xs text-slate-400">Users</div>
+                                        <div class="font-bold text-slate-900 text-sm mt-0.5">{{ number_format($totalUsers) }}</div>
+                                    </div>
+                                    <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                        <div class="text-xs text-slate-400">Events</div>
+                                        <div class="font-bold text-purple-600 text-sm mt-0.5">{{ number_format($totalEvents) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                {{-- ── MAIN CANVAS CONTENT ─────────────────────────────────────── --}}
+                <div class="flex-1 min-w-0 space-y-8">
 
             {{-- ── PLATFORM KPI CARDS ───────────────────────────────────────── --}}
             <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
@@ -81,7 +185,6 @@
             {{-- ── ADMINISTRATIVE QUICK ACTIONS ────────────────────────────── --}}
             <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Administrative Oversight</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <a href="{{ route('admin.users.index') }}"
                        class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition group text-center">
@@ -264,7 +367,6 @@
                 </div>
 
             </div>
-
         </div>
     </div>
 </x-app-layout>

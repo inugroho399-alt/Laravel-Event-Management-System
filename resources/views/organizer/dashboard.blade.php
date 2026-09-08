@@ -20,39 +20,137 @@
     </x-slot>
 
     <div class="py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row gap-8">
 
-            {{-- ── KPI CARDS ───────────────────────────────────────────────── --}}
-            <div class="grid grid-cols-2 lg:grid-cols-7 gap-4">
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Events</div>
-                    <div class="text-3xl font-bold text-gray-900 mt-1">{{ number_format($totalEvents) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Published</div>
-                    <div class="text-3xl font-bold text-emerald-600 mt-1">{{ number_format($publishedEvents) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket Types</div>
-                    <div class="text-3xl font-bold text-violet-600 mt-1">{{ number_format($totalTicketTypes) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Registrations</div>
-                    <div class="text-3xl font-bold text-indigo-600 mt-1">{{ number_format($totalRegistrations) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</div>
-                    <div class="text-3xl font-bold text-sky-600 mt-1">{{ number_format($totalParticipants) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Attended</div>
-                    <div class="text-3xl font-bold text-blue-600 mt-1">{{ number_format($totalAttended) }}</div>
-                </div>
-                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm col-span-2 lg:col-span-1">
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</div>
-                    <div class="text-3xl font-bold text-amber-600 mt-1">${{ number_format($totalRevenue, 2) }}</div>
-                </div>
-            </div>
+                {{-- ── MODERN SIDEBAR NAVIGATION ────────────────────────────────── --}}
+                <aside class="w-full lg:w-64 shrink-0" x-data="{ mobileNavOpen: false }">
+                    <!-- Mobile Hamburger Accordion for Sidebar -->
+                    <div class="lg:hidden mb-4 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                                <span class="font-bold text-sm text-slate-900">Organizer Workspace</span>
+                            </div>
+                            <button @click="mobileNavOpen = !mobileNavOpen" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 transition">
+                                <span x-text="mobileNavOpen ? 'Hide Menu' : 'Workspace Menu'">Workspace Menu</span>
+                                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': mobileNavOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Card -->
+                    <div :class="{ 'block': mobileNavOpen, 'hidden': !mobileNavOpen }" class="hidden lg:block space-y-6 sticky top-28">
+                        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-6">
+                            <!-- Role & Workspace Identifier -->
+                            <div class="pb-4 border-b border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Workspace</span>
+                                    <x-status-badge status="organizer" size="sm" />
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-base truncate">{{ Auth::user()->name }}</h3>
+                                <p class="text-xs text-slate-500 truncate">{{ Auth::user()->email }}</p>
+                            </div>
+
+                            <!-- Navigation Links -->
+                            <nav class="space-y-1">
+                                <a href="{{ route('organizer.dashboard') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('organizer.dashboard') ? 'bg-indigo-50 text-indigo-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('organizer.dashboard') ? 'text-indigo-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                                    </svg>
+                                    <span>Dashboard</span>
+                                </a>
+
+                                <a href="{{ route('organizer.events.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('organizer.events.*') ? 'bg-indigo-50 text-indigo-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('organizer.events.*') ? 'text-indigo-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>Manage Events</span>
+                                </a>
+
+                                <a href="{{ route('organizer.reports.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold {{ request()->routeIs('organizer.reports.*') ? 'bg-indigo-50 text-indigo-700 shadow-xs' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} transition">
+                                    <svg class="w-5 h-5 {{ request()->routeIs('organizer.reports.*') ? 'text-indigo-600' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                    </svg>
+                                    <span>Reports & Exports</span>
+                                </a>
+
+                                <a href="{{ route('events.index') }}"
+                                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition">
+                                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <span>Discover Public</span>
+                                </a>
+                            </nav>
+
+                            <!-- Mini Summary Widget -->
+                            <div class="pt-4 border-t border-slate-100 bg-slate-50/70 -mx-5 -mb-5 p-5 rounded-b-2xl">
+                                <div class="text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wider">Quick Snapshot</div>
+                                <div class="grid grid-cols-2 gap-2 text-center">
+                                    <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                        <div class="text-xs text-slate-400">Events</div>
+                                        <div class="font-bold text-slate-900 text-sm mt-0.5">{{ number_format($totalEvents) }}</div>
+                                    </div>
+                                    <div class="bg-white p-2.5 rounded-xl border border-slate-200/60">
+                                        <div class="text-xs text-slate-400">Attended</div>
+                                        <div class="font-bold text-emerald-600 text-sm mt-0.5">{{ number_format($totalAttended) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Create Event Fast Action -->
+                        <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl p-5 text-white shadow-md space-y-3">
+                            <h4 class="font-bold text-sm">Host a New Event</h4>
+                            <p class="text-xs text-indigo-100 leading-relaxed">Launch ticket tiers, configure quotas, and monitor check-ins.</p>
+                            <a href="{{ route('organizer.events.create') }}"
+                               class="inline-flex items-center justify-center w-full py-2 px-3 bg-white text-indigo-700 rounded-xl font-bold text-xs hover:bg-indigo-50 transition shadow-xs">
+                                + Create New Event
+                            </a>
+                        </div>
+                    </div>
+                </aside>
+
+                {{-- ── MAIN CANVAS CONTENT ─────────────────────────────────────── --}}
+                <div class="flex-1 min-w-0 space-y-8">
+
+                    {{-- ── KPI CARDS ───────────────────────────────────────────────── --}}
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 sm:gap-4">
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Events</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">{{ number_format($totalEvents) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Published</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">{{ number_format($publishedEvents) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Ticket Types</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-violet-600 mt-1">{{ number_format($totalTicketTypes) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Registrations</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-indigo-600 mt-1">{{ number_format($totalRegistrations) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Participants</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-sky-600 mt-1">{{ number_format($totalParticipants) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Attended</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-blue-600 mt-1">{{ number_format($totalAttended) }}</div>
+                        </div>
+                        <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition col-span-2 sm:col-span-1">
+                            <div class="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Revenue</div>
+                            <div class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">${{ number_format($totalRevenue, 2) }}</div>
+                        </div>
+                    </div>
 
             {{-- ── UPCOMING EVENTS ─────────────────────────────────────────── --}}
             <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
@@ -342,9 +440,9 @@
                         </div>
                         <span class="text-xs font-semibold text-gray-700 group-hover:text-gray-900">My Profile</span>
                     </a>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 </x-app-layout>
