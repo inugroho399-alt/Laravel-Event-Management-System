@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\QrCodeService;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class SecurityReviewTest extends TestCase
@@ -343,5 +344,86 @@ class SecurityReviewTest extends TestCase
 
         $this->assertStringNotContainsString('password', $json);
         $this->assertStringNotContainsString('secret_remember_token_123', $json);
+    }
+
+    /**
+     * 14. Test Event Creation rejects SVG banner uploads to prevent stored XSS.
+     */
+    public function test_event_creation_rejects_svg_uploads_to_prevent_stored_xss(): void
+    {
+        $fakeSvg = UploadedFile::fake()->create('malicious.svg', 100, 'image/svg+xml');
+
+        $response = $this->actingAs($this->organizerA)
+            ->post(route('organizer.events.store'), [
+                'title' => 'XSS Vector Event',
+                'description' => 'Testing SVG rejection',
+                'start_date' => now()->addDays(2)->format('Y-m-d H:i:s'),
+                'end_date' => now()->addDays(3)->format('Y-m-d H:i:s'),
+                'status' => EventStatus::Published->value,
+                'banner_image' => $fakeSvg,
+            ]);
+
+        $response->assertSessionHasErrors('banner_image');
+        $this->assertDatabaseMissing('events', ['title' => 'XSS Vector Event']);
+    }
+
+    /**
+     * 15. Test Organizer cannot manipulate peer organizer's tickets via manipulated URL IDs.
+     */
+    public function test_organizer_cannot_view_or_manipulate_peer_tickets_via_manipulated_url(): void
+    {
+        $eventB = Event::factory()->create(['organizer_id' => $this->organizerB->id]);
+        $ticketB = TicketType::factory()->create(['event_id' => $eventB->id, 'quota' => 20]);
+
+        $this->actingAs($this->organizerA);
+
+        // Attempt to edit ticketB using eventA's URL
+        $this->get(route('organizer.events.tickets.edit', [$this->eventA, $ticketB]))->assertStatus(404);
+
+        // Attempt to update ticketB using eventA's URL (FormRequest authorization blocks with 403)
+        $this->put(route('organizer.events.tickets.update', [$this->eventA, $ticketB]), [
+            'name' => 'Tampered',
+            'price' => 5.00,
+            'quota' => 100,
+        ])->assertStatus(403);
+
+        // Attempt to update ticketB using eventB's URL
+        $this->put(route('organizer.events.tickets.update', [$eventB, $ticketB]), [
+            'name' => 'Tampered',
+            'price' => 5.00,
+            'quota' => 100,
+        ])->assertStatus(403);
+
+        // Attempt to delete ticketB using eventA's URL
+        $this->delete(route('organizer.events.tickets.destroy', [$this->eventA, $ticketB]))->assertStatus(404);
+
+        // Attempt to delete ticketB using eventB's URL
+        $this->delete(route('organizer.events.tickets.destroy', [$eventB, $ticketB]))->assertStatus(403);
+    }
+
+    /**
+     * 16. Test Organizer cannot access peer organizer's attendee roster via manipulated event ID.
+     */
+    public function test_organizer_cannot_access_peer_attendee_roster_via_manipulated_event_id(): void
+    {
+        $eventB = Event::factory()->create(['organizer_id' => $this->organizerB->id]);
+
+        $response = $this->actingAs($this->organizerA)
+            ->get(route('organizer.events.registrations.index', $eventB));
+
+        $response->assertStatus(403);
+    }
+
+    /**
+     * 17. Test Organizer cannot export peer organizer's attendee CSV via manipulated event ID.
+     */
+    public function test_organizer_cannot_export_peer_attendees_csv_via_manipulated_event_id(): void
+    {
+        $eventB = Event::factory()->create(['organizer_id' => $this->organizerB->id]);
+
+        $response = $this->actingAs($this->organizerA)
+            ->get(route('organizer.events.reports.export-attendees', $eventB));
+
+        $response->assertStatus(403);
     }
 }

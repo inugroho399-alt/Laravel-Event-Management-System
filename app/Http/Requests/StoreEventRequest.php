@@ -32,7 +32,7 @@ class StoreEventRequest extends FormRequest
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', Rule::enum(EventStatus::class)],
-            'banner_image' => ['nullable', 'image', 'max:2048'],
+            'banner_image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ];
     }
 }
