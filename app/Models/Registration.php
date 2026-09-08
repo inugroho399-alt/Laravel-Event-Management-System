@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Enums\RegistrationStatus;
+use App\Services\QrCodeService;
 use Database\Factories\RegistrationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Registration extends Model
@@ -99,5 +101,25 @@ class Registration extends Model
         } while (static::where('registration_code', $code)->exists());
 
         return $code;
+    }
+
+    /**
+     * Get the public URL for the QR code image.
+     */
+    public function getQrCodeUrlAttribute(): ?string
+    {
+        if (! $this->qr_code_path) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->qr_code_path);
+    }
+
+    /**
+     * Get the pure SVG string for the QR code.
+     */
+    public function getQrCodeSvgAttribute(): string
+    {
+        return app(QrCodeService::class)->getOrGenerateSvg($this);
     }
 }

@@ -7,10 +7,12 @@ use App\Http\Requests\StoreRegistrationRequest;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\TicketType;
+use App\Services\QrCodeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class RegistrationController extends Controller
@@ -31,9 +33,14 @@ class RegistrationController extends Controller
     /**
      * Display the digital ticket for the specified registration.
      */
-    public function show(Registration $registration): View
+    public function show(Registration $registration, QrCodeService $qrCodeService): View
     {
         Gate::authorize('view', $registration);
+
+        // Ensure QR code is generated and stored if missing
+        if (! $registration->qr_code_path || ! Storage::disk('public')->exists($registration->qr_code_path)) {
+            $qrCodeService->generateAndStore($registration);
+        }
 
         $registration->load([
             'event.organizer',
@@ -48,7 +55,7 @@ class RegistrationController extends Controller
     /**
      * Store a newly created registration for the event.
      */
-    public function store(StoreRegistrationRequest $request, Event $event): RedirectResponse
+    public function store(StoreRegistrationRequest $request, Event $event, QrCodeService $qrCodeService): RedirectResponse
     {
         if (! $event->isRegistrationOpen()) {
             return back()->withErrors([
@@ -59,7 +66,7 @@ class RegistrationController extends Controller
         $user = $request->user();
 
         try {
-            DB::transaction(function () use ($event, $request, $user) {
+            DB::transaction(function () use ($event, $request, $user, $qrCodeService) {
                 // Prevent duplicate active registration for the same event
                 $alreadyRegistered = $event->registrations()
                     ->where('user_id', $user->id)
@@ -84,13 +91,15 @@ class RegistrationController extends Controller
                     throw new \DomainException('Selected ticket tier is sold out.');
                 }
 
-                Registration::create([
+                $registration = Registration::create([
                     'registration_code' => Registration::generateUniqueCode(),
                     'user_id' => $user->id,
                     'event_id' => $event->id,
                     'ticket_type_id' => $ticket->id,
                     'status' => RegistrationStatus::Confirmed,
                 ]);
+
+                $qrCodeService->generateAndStore($registration);
             });
         } catch (\DomainException $e) {
             return back()->withErrors(['error' => $e->getMessage()]);

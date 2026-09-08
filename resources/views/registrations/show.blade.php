@@ -199,21 +199,22 @@
                         </div>
                     </div>
 
-                    <!-- Pass Verification Box (Ready for QR in Phase 9) -->
+                    <!-- Pass Verification Box (Official Dynamic QR Code) -->
                     <div class="p-6 rounded-xl border border-gray-100 bg-gradient-to-b from-white to-gray-50 flex flex-col items-center justify-center text-center">
-                        <div class="w-36 h-36 bg-white p-3 rounded-xl border-2 border-gray-800 shadow-sm flex flex-col items-center justify-center relative group">
-                            <!-- Digital Pass Icon Placeholder for QR -->
-                            <div class="w-full h-full border border-dashed border-gray-300 rounded flex flex-col items-center justify-center p-2 bg-gray-50">
-                                <svg class="w-12 h-12 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                                </svg>
-                                <span class="font-mono text-[10px] font-bold text-gray-800 mt-1 uppercase">
-                                    {{ substr($registration->registration_code, 0, 10) }}
-                                </span>
+                        <div class="bg-white p-3.5 rounded-2xl border-2 border-gray-900 shadow-md flex flex-col items-center justify-center relative group">
+                            <!-- Vector SVG QR Code -->
+                            <div class="w-44 h-44 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full">
+                                {!! $registration->qr_code_svg !!}
                             </div>
+                            <span class="font-mono text-xs font-bold text-gray-900 mt-2 tracking-widest uppercase">
+                                {{ $registration->registration_code }}
+                            </span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-3 font-medium">
-                            Scan code at entrance for attendee check-in.
+                        <p class="text-xs text-gray-600 mt-3.5 font-medium flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                            </svg>
+                            <span>Scan QR code at venue entrance for instant check-in.</span>
                         </p>
                         <p class="text-[11px] text-gray-400 mt-0.5">
                             Registered on {{ $registration->created_at->format('M d, Y • h:i A') }}
