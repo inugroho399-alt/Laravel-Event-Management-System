@@ -21,18 +21,30 @@ class DashboardController extends Controller
     public function index(): View
     {
         // ── USER STATS ────────────────────────────────────────────────────────
-        $totalUsers = User::count();
-        $adminUsers = User::where('role', UserRole::Admin)->count();
-        $organizerUsers = User::where('role', UserRole::Organizer)->count();
-        $participantUsers = User::where('role', UserRole::Participant)->count();
+        // Single GROUP BY query replaces 4 individual COUNT queries.
+        $userCounts = User::query()
+            ->selectRaw('role, count(*) as total')
+            ->groupBy('role')
+            ->pluck('total', 'role');
+
+        $totalUsers = (int) $userCounts->sum();
+        $adminUsers = (int) $userCounts->get(UserRole::Admin->value, 0);
+        $organizerUsers = (int) $userCounts->get(UserRole::Organizer->value, 0);
+        $participantUsers = (int) $userCounts->get(UserRole::Participant->value, 0);
 
         // ── EVENT STATS ───────────────────────────────────────────────────────
-        $totalEvents = Event::count();
-        $publishedEvents = Event::where('status', EventStatus::Published)->count();
-        $ongoingEvents = Event::where('status', EventStatus::Ongoing)->count();
-        $completedEvents = Event::where('status', EventStatus::Completed)->count();
-        $draftEvents = Event::where('status', EventStatus::Draft)->count();
-        $cancelledEvents = Event::where('status', EventStatus::Cancelled)->count();
+        // Single GROUP BY query replaces 6 individual COUNT queries.
+        $eventCounts = Event::query()
+            ->selectRaw('status, count(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
+        $totalEvents = (int) $eventCounts->sum();
+        $publishedEvents = (int) $eventCounts->get(EventStatus::Published->value, 0);
+        $ongoingEvents = (int) $eventCounts->get(EventStatus::Ongoing->value, 0);
+        $completedEvents = (int) $eventCounts->get(EventStatus::Completed->value, 0);
+        $draftEvents = (int) $eventCounts->get(EventStatus::Draft->value, 0);
+        $cancelledEvents = (int) $eventCounts->get(EventStatus::Cancelled->value, 0);
 
         // ── REGISTRATION & CHECK-IN STATS ─────────────────────────────────────
         $totalRegistrations = Registration::where('status', '!=', RegistrationStatus::Cancelled)->count();
