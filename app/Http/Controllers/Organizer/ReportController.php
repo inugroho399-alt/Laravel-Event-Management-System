@@ -106,6 +106,20 @@ class ReportController extends Controller
 
         // Calculate per-event revenue and capacity
         $events->getCollection()->transform(function ($event) {
+        // Pre-aggregate per-event revenue in one batch query (replaces 1 JOIN per paginated row).
+        $pageEventIds = $events->getCollection()->pluck('id');
+        $revenueByEvent = Registration::whereIn('registrations.event_id', $pageEventIds)
+            ->whereIn('registrations.status', [
+                RegistrationStatus::Confirmed->value,
+                RegistrationStatus::Attended->value,
+            ])
+            ->join('ticket_types', 'registrations.ticket_type_id', '=', 'ticket_types.id')
+            ->selectRaw('registrations.event_id, sum(ticket_types.price) as total_revenue')
+            ->groupBy('registrations.event_id')
+            ->pluck('total_revenue', 'event_id');
+
+        // Decorate each event with pre-computed capacity, revenue, and attendance rate.
+        $events->getCollection()->transform(function ($event) use ($revenueByEvent) {
             $event->total_capacity = $event->ticketTypes->sum('quota');
             $event->revenue = (float) Registration::where('registrations.event_id', $event->id)
                 ->whereIn('registrations.status', [
@@ -114,6 +128,7 @@ class ReportController extends Controller
                 ])
                 ->join('ticket_types', 'registrations.ticket_type_id', '=', 'ticket_types.id')
                 ->sum('ticket_types.price');
+            $event->revenue = (float) ($revenueByEvent->get($event->id, 0));
 
             $event->attendance_rate = $event->active_registrations_count > 0
                 ? round(($event->attended_count / $event->active_registrations_count) * 100, 1)
@@ -210,11 +225,25 @@ class ReportController extends Controller
                 ->where('ticket_type_id', $tier->id)
                 ->where('status', '!=', RegistrationStatus::Cancelled)
                 ->count();
+        // Ticket Tier Breakdown — single aggregated query (replaces 2N individual COUNT queries).
+        $registrationAggregates = Registration::where('event_id', $event->id)
+            ->whereIn('status', [
+                RegistrationStatus::Confirmed->value,
+                RegistrationStatus::Attended->value,
+            ])
+            ->selectRaw('ticket_type_id, status, count(*) as total')
+            ->groupBy('ticket_type_id', 'status')
+            ->get()
+            ->groupBy('ticket_type_id');
 
             $attended = Registration::where('event_id', $event->id)
                 ->where('ticket_type_id', $tier->id)
                 ->where('status', RegistrationStatus::Attended)
                 ->count();
+        $ticketTiers = $event->ticketTypes->map(function ($tier) use ($registrationAggregates) {
+            $rows = $registrationAggregates->get($tier->id, collect());
+            $sold = (int) $rows->sum('total');
+            $attended = (int) $rows->firstWhere('status', RegistrationStatus::Attended->value)?->total ?? 0;
 
             $revenue = (float) ($tier->price * $sold);
             $remaining = max(0, $tier->quota - $sold);
