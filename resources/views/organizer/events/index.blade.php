@@ -78,6 +78,7 @@
                                             <a href="{{ route('organizer.events.check-in.create', $event) }}" class="text-purple-600 hover:text-purple-800 font-medium">Check-in</a>
                                             <a href="{{ route('organizer.events.tickets.index', $event) }}" class="text-amber-600 hover:text-amber-800 font-medium">Tickets ({{ $event->ticket_types_count }})</a>
                                             <a href="{{ route('organizer.events.registrations.index', $event) }}" class="text-emerald-600 hover:text-emerald-800 font-medium">Attendees ({{ $event->registrations_count }})</a>
+                                            <a href="{{ route('organizer.events.reports.show', $event) }}" class="text-blue-600 hover:text-blue-800 font-medium">Report</a>
                                             <a href="{{ route('events.show', $event) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">View</a>
                                             <a href="{{ route('organizer.events.edit', $event) }}" class="text-gray-600 hover:text-gray-900 font-medium">Edit</a>
                                             <form method="POST" action="{{ route('organizer.events.destroy', $event) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this event?');">

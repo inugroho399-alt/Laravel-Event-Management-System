@@ -5,6 +5,7 @@ use App\Http\Controllers\Organizer\CheckInController as OrganizerCheckInControll
 use App\Http\Controllers\Organizer\DashboardController as OrganizerDashboardController;
 use App\Http\Controllers\Organizer\EventController as OrganizerEventController;
 use App\Http\Controllers\Organizer\RegistrationController as OrganizerRegistrationController;
+use App\Http\Controllers\Organizer\ReportController as OrganizerReportController;
 use App\Http\Controllers\Organizer\TicketTypeController as OrganizerTicketTypeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RegistrationController;
@@ -35,9 +36,13 @@ Route::middleware('auth')->group(function () {
 // Organizer Event, Ticket, Attendee, & Check-in Management
 Route::prefix('organizer')->name('organizer.')->middleware(['auth', 'role:organizer'])->group(function () {
     Route::get('dashboard', [OrganizerDashboardController::class, 'index'])->name('dashboard');
+    Route::get('reports', [OrganizerReportController::class, 'index'])->name('reports.index');
+    Route::get('reports/export', [OrganizerReportController::class, 'exportSummary'])->name('reports.export');
     Route::resource('events', OrganizerEventController::class);
     Route::resource('events.tickets', OrganizerTicketTypeController::class)->parameters(['tickets' => 'ticket']);
     Route::get('events/{event}/registrations', [OrganizerRegistrationController::class, 'index'])->name('events.registrations.index');
+    Route::get('events/{event}/report', [OrganizerReportController::class, 'show'])->name('events.reports.show');
+    Route::get('events/{event}/report/export-attendees', [OrganizerReportController::class, 'exportEventAttendees'])->name('events.reports.export-attendees');
     Route::get('events/{event}/check-in', [OrganizerCheckInController::class, 'create'])->name('events.check-in.create');
     Route::post('events/{event}/check-in', [OrganizerCheckInController::class, 'store'])->name('events.check-in.store');
 });

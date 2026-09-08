@@ -292,7 +292,7 @@
             {{-- ── QUICK ACTIONS ────────────────────────────────────────────── --}}
             <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Quick Actions</h3>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                     <a href="{{ route('organizer.events.create') }}"
                        class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition group text-center">
                         <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-200 transition">
@@ -311,6 +311,16 @@
                             </svg>
                         </div>
                         <span class="text-xs font-semibold text-gray-700 group-hover:text-emerald-700">Manage Events</span>
+                    </a>
+                    <a href="{{ route('organizer.reports.index') }}"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition group text-center">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 group-hover:bg-purple-200 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-700 group-hover:text-purple-700">Reports</span>
                     </a>
                     <a href="{{ route('events.index') }}"
                        class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition group text-center">

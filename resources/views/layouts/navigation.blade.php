@@ -31,6 +31,9 @@
                             <x-nav-link :href="route('organizer.events.index')" :active="request()->routeIs('organizer.events.*')">
                                 {{ __('Manage Events') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
+                                {{ __('Reports') }}
+                            </x-nav-link>
                         @endif
                     @endauth
                 </div>
@@ -114,6 +117,9 @@
                 @if (Auth::user()->isOrganizer() || Auth::user()->isAdmin())
                     <x-responsive-nav-link :href="route('organizer.events.index')" :active="request()->routeIs('organizer.events.*')">
                         {{ __('Manage Events') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
+                        {{ __('Reports') }}
                     </x-responsive-nav-link>
                 @endif
             @endauth
