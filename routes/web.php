@@ -26,7 +26,9 @@ Route::get('/dashboard', function () {
 
 // Participant Registrations
 Route::middleware('auth')->group(function () {
-    Route::post('/events/{event:slug}/register', [RegistrationController::class, 'store'])->name('events.register');
+    Route::post('/events/{event:slug}/register', [RegistrationController::class, 'store'])
+        ->name('events.register')
+        ->middleware('throttle:60,1');
     Route::get('/my-registrations', [RegistrationController::class, 'index'])->name('registrations.index');
     Route::get('/my-registrations/{registration}', [RegistrationController::class, 'show'])->name('registrations.show');
     Route::post('/my-registrations/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel');
@@ -47,7 +49,9 @@ Route::prefix('organizer')->name('organizer.')->middleware(['auth', 'role:organi
     Route::get('events/{event}/report', [OrganizerReportController::class, 'show'])->name('events.reports.show');
     Route::get('events/{event}/report/export-attendees', [OrganizerReportController::class, 'exportEventAttendees'])->name('events.reports.export-attendees');
     Route::get('events/{event}/check-in', [OrganizerCheckInController::class, 'create'])->name('events.check-in.create');
-    Route::post('events/{event}/check-in', [OrganizerCheckInController::class, 'store'])->name('events.check-in.store');
+    Route::post('events/{event}/check-in', [OrganizerCheckInController::class, 'store'])
+        ->name('events.check-in.store')
+        ->middleware('throttle:120,1');
 });
 
 // Admin Platform Oversight & User Management
