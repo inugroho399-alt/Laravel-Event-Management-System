@@ -62,7 +62,7 @@ class CheckInController extends Controller
         Gate::authorize('update', $event);
 
         // 1. Check event status
-        if ($event->status === EventStatus::Draft || $event->status === EventStatus::Cancelled) {
+        if ($event->status === EventStatus::Draft || $event->status === EventStatus::Cancelled || $event->status === EventStatus::Completed) {
             $errorMessage = 'This event is currently '.strtolower($event->status->value).' and not open for attendee check-in.';
 
             if ($request->wantsJson()) {
