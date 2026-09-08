@@ -71,9 +71,12 @@
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="font-mono font-bold text-gray-800 bg-gray-100 px-2.5 py-1 rounded text-xs">
+                                            <a href="{{ route('registrations.show', $registration) }}" class="font-mono font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded text-xs transition inline-flex items-center gap-1.5" title="View Digital Ticket">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                                </svg>
                                                 {{ $registration->registration_code }}
-                                            </span>
+                                            </a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @php
@@ -91,16 +94,17 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                                             {{ $registration->created_at->format('M d, Y') }}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
+                                            <a href="{{ route('registrations.show', $registration) }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">
+                                                View Ticket
+                                            </a>
                                             @if ($registration->status === \App\Enums\RegistrationStatus::Confirmed)
                                                 <form method="POST" action="{{ route('registrations.cancel', $registration) }}" class="inline" onsubmit="return confirm('Are you sure you want to cancel your registration? Your ticket quota will be released.');">
                                                     @csrf
                                                     <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-800">
-                                                        Cancel Registration
+                                                        Cancel
                                                     </button>
                                                 </form>
-                                            @else
-                                                <span class="text-xs text-gray-400 italic">No actions</span>
                                             @endif
                                         </td>
                                     </tr>

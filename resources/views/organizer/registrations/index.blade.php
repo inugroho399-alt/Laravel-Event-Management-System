@@ -61,7 +61,8 @@
                                     <th class="px-6 py-3.5 font-semibold">Registration Code</th>
                                     <th class="px-6 py-3.5 font-semibold">Status</th>
                                     <th class="px-6 py-3.5 font-semibold">Check-in</th>
-                                    <th class="px-6 py-3.5 font-semibold text-right">Registered At</th>
+                                    <th class="px-6 py-3.5 font-semibold">Registered At</th>
+                                    <th class="px-6 py-3.5 font-semibold text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 bg-white">
@@ -76,9 +77,9 @@
                                             <div class="text-xs text-gray-400">{{ $registration->ticketType->price > 0 ? '$' . number_format($registration->ticketType->price, 2) : 'Free' }}</div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="font-mono font-semibold text-xs bg-gray-100 px-2 py-1 rounded text-gray-700">
+                                            <a href="{{ route('registrations.show', $registration) }}" class="font-mono font-semibold text-xs bg-gray-100 hover:bg-gray-200 text-indigo-700 px-2 py-1 rounded transition inline-flex items-center gap-1" title="View Ticket">
                                                 {{ $registration->registration_code }}
-                                            </span>
+                                            </a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @php
@@ -105,8 +106,13 @@
                                                 <span class="text-gray-400 italic">Not checked in</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs text-gray-500">
+                                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                                             {{ $registration->created_at->format('M d, Y • h:i A') }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs">
+                                            <a href="{{ route('registrations.show', $registration) }}" class="text-indigo-600 hover:text-indigo-900 font-semibold">
+                                                View Ticket &rarr;
+                                            </a>
                                         </td>
                                     </tr>
                                 @endforeach

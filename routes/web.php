@@ -22,6 +22,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     Route::post('/events/{event:slug}/register', [RegistrationController::class, 'store'])->name('events.register');
     Route::get('/my-registrations', [RegistrationController::class, 'index'])->name('registrations.index');
+    Route::get('/my-registrations/{registration}', [RegistrationController::class, 'show'])->name('registrations.show');
     Route::post('/my-registrations/{registration}/cancel', [RegistrationController::class, 'cancel'])->name('registrations.cancel');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

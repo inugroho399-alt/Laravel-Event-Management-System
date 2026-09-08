@@ -29,6 +29,23 @@ class RegistrationController extends Controller
     }
 
     /**
+     * Display the digital ticket for the specified registration.
+     */
+    public function show(Registration $registration): View
+    {
+        Gate::authorize('view', $registration);
+
+        $registration->load([
+            'event.organizer',
+            'ticketType',
+            'user',
+            'checkIn.checker',
+        ]);
+
+        return view('registrations.show', compact('registration'));
+    }
+
+    /**
      * Store a newly created registration for the event.
      */
     public function store(StoreRegistrationRequest $request, Event $event): RedirectResponse
