@@ -82,6 +82,7 @@
             <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100 p-6">
                 <h3 class="font-semibold text-gray-800 mb-4">Administrative Oversight</h3>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <a href="{{ route('admin.users.index') }}"
                        class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50 transition group text-center">
                         <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-200 transition">
@@ -100,6 +101,16 @@
                             </svg>
                         </div>
                         <span class="text-xs font-semibold text-gray-700 group-hover:text-emerald-700">All Events Oversight</span>
+                    </a>
+
+                    <a href="{{ route('admin.registrations.index') }}"
+                       class="flex flex-col items-center gap-2 p-4 rounded-xl border border-gray-100 hover:border-sky-200 hover:bg-sky-50 transition group text-center">
+                        <div class="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center text-sky-600 group-hover:bg-sky-200 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                            </svg>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-700 group-hover:text-sky-700">Registrations</span>
                     </a>
 
                     <a href="{{ route('organizer.reports.index') }}"
@@ -257,3 +268,4 @@
         </div>
     </div>
 </x-app-layout>
+

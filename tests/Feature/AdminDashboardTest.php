@@ -360,4 +360,183 @@ class AdminDashboardTest extends TestCase
         $response->assertSee(route('admin.dashboard'));
         $response->assertSee('Redirecting to Administrator dashboard');
     }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 6. GLOBAL REGISTRATIONS OVERSIGHT
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function test_admin_can_view_all_registrations(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id]);
+        $attendee = User::factory()->participant()->create(['name' => 'John von Neumann']);
+
+        $reg = Registration::factory()->create([
+            'user_id' => $attendee->id,
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'registration_code' => 'EVENT-REG-JVN001',
+            'status' => RegistrationStatus::Confirmed,
+        ]);
+
+        $response = $this->actingAs($admin)->get(route('admin.registrations.index'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Global Ticket Registrations');
+        $response->assertSee('EVENT-REG-JVN001');
+        $response->assertSee('John von Neumann');
+        $response->assertSee($event->title);
+    }
+
+    public function test_admin_can_filter_and_search_registrations(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id]);
+
+        $reg1 = Registration::factory()->create([
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'registration_code' => 'EVENT-REG-FINDME',
+            'status' => RegistrationStatus::Confirmed,
+        ]);
+
+        $reg2 = Registration::factory()->create([
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+            'registration_code' => 'EVENT-REG-HIDEME',
+            'status' => RegistrationStatus::Cancelled,
+        ]);
+
+        // Search by registration code
+        $searchResponse = $this->actingAs($admin)->get(route('admin.registrations.index', [
+            'search' => 'FINDME',
+        ]));
+        $searchResponse->assertStatus(200);
+        $searchResponse->assertSee('EVENT-REG-FINDME');
+        $searchResponse->assertDontSee('EVENT-REG-HIDEME');
+
+        // Filter by status
+        $filterResponse = $this->actingAs($admin)->get(route('admin.registrations.index', [
+            'status' => RegistrationStatus::Cancelled->value,
+        ]));
+        $filterResponse->assertStatus(200);
+        $filterResponse->assertSee('EVENT-REG-HIDEME');
+        $filterResponse->assertDontSee('EVENT-REG-FINDME');
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 7. SENSITIVE DATA EXPOSURE PROTECTION
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function test_admin_views_do_not_expose_sensitive_information(): void
+    {
+        $admin = User::factory()->admin()->create([
+            'remember_token' => 'super_secret_remember_token_xyz123',
+        ]);
+        $participant = User::factory()->participant()->create([
+            'password' => '$2y$12$eX4mpL3H4sh3dPa55w0rdStr1ngD0N0tExP0s3',
+            'remember_token' => 'participant_token_abc987',
+        ]);
+
+        $usersResponse = $this->actingAs($admin)->get(route('admin.users.index'));
+        $usersResponse->assertStatus(200);
+        $usersResponse->assertDontSee($participant->password);
+        $usersResponse->assertDontSee('super_secret_remember_token_xyz123');
+        $usersResponse->assertDontSee('participant_token_abc987');
+
+        $editResponse = $this->actingAs($admin)->get(route('admin.users.edit', $participant));
+        $editResponse->assertStatus(200);
+        $editResponse->assertDontSee($participant->password);
+        $editResponse->assertDontSee('participant_token_abc987');
+
+        $dashboardResponse = $this->actingAs($admin)->get(route('admin.dashboard'));
+        $dashboardResponse->assertStatus(200);
+        $dashboardResponse->assertDontSee($admin->password);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 8. PAGINATION
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function test_admin_pagination_works_for_users_events_and_registrations(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        // 1. Users pagination (16 participants + 1 admin = 17 users > 15 per page)
+        User::factory()->count(16)->participant()->create();
+        $userResponse = $this->actingAs($admin)->get(route('admin.users.index', ['page' => 2]));
+        $userResponse->assertStatus(200);
+        $this->assertTrue($userResponse->viewData('users')->hasPages());
+
+        // 2. Events pagination (16 events > 15 per page)
+        Event::factory()->count(16)->published()->create(['organizer_id' => $admin->id]);
+        $eventResponse = $this->actingAs($admin)->get(route('admin.events.index', ['page' => 2]));
+        $eventResponse->assertStatus(200);
+        $this->assertTrue($eventResponse->viewData('events')->hasPages());
+
+        // 3. Registrations pagination (16 registrations > 15 per page)
+        $event = Event::first();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id]);
+        Registration::factory()->count(16)->create([
+            'event_id' => $event->id,
+            'ticket_type_id' => $ticket->id,
+        ]);
+        $regResponse = $this->actingAs($admin)->get(route('admin.registrations.index', ['page' => 2]));
+        $regResponse->assertStatus(200);
+        $this->assertTrue($regResponse->viewData('registrations')->hasPages());
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 9. EMPTY STATES
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function test_admin_empty_states_render_gracefully(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        // Empty events
+        $eventsResponse = $this->actingAs($admin)->get(route('admin.events.index'));
+        $eventsResponse->assertStatus(200);
+        $eventsResponse->assertSee('No events found matching your filter criteria.');
+
+        // Empty registrations
+        $regsResponse = $this->actingAs($admin)->get(route('admin.registrations.index'));
+        $regsResponse->assertStatus(200);
+        $regsResponse->assertSee('No registrations found matching your filter criteria.');
+
+        // Empty search on users
+        $usersResponse = $this->actingAs($admin)->get(route('admin.users.index', ['search' => 'nonexistent_user_query_123']));
+        $usersResponse->assertStatus(200);
+        $usersResponse->assertSee('No users found matching your criteria.');
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // 10. DIRECT URL ACCESS AUTHORIZATION ENFORCEMENT
+    // ──────────────────────────────────────────────────────────────────────────
+
+    public function test_direct_url_access_authorization_strictly_enforced_server_side(): void
+    {
+        $organizer = User::factory()->organizer()->create();
+        $participant = User::factory()->participant()->create();
+
+        // 1. Guest attempting direct URL access -> 302 redirect to login
+        $this->get('/admin/dashboard')->assertRedirect('/login');
+        $this->get('/admin/users')->assertRedirect('/login');
+        $this->get('/admin/events')->assertRedirect('/login');
+        $this->get('/admin/registrations')->assertRedirect('/login');
+
+        // 2. Participant attempting direct URL access -> 403 Forbidden
+        $this->actingAs($participant)->get('/admin/dashboard')->assertStatus(403);
+        $this->actingAs($participant)->get('/admin/users')->assertStatus(403);
+        $this->actingAs($participant)->get('/admin/events')->assertStatus(403);
+        $this->actingAs($participant)->get('/admin/registrations')->assertStatus(403);
+
+        // 3. Organizer attempting direct URL access -> 403 Forbidden
+        $this->actingAs($organizer)->get('/admin/dashboard')->assertStatus(403);
+        $this->actingAs($organizer)->get('/admin/users')->assertStatus(403);
+        $this->actingAs($organizer)->get('/admin/events')->assertStatus(403);
+        $this->actingAs($organizer)->get('/admin/registrations')->assertStatus(403);
+    }
 }

@@ -23,6 +23,9 @@
                             <x-nav-link :href="route('admin.events.index')" :active="request()->routeIs('admin.events.*')">
                                 {{ __('All Events') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.registrations.index')" :active="request()->routeIs('admin.registrations.*')">
+                                {{ __('Registrations') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
                                 {{ __('Reports') }}
                             </x-nav-link>
@@ -128,6 +131,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.events.index')" :active="request()->routeIs('admin.events.*')">
                         {{ __('All Events') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.registrations.index')" :active="request()->routeIs('admin.registrations.*')">
+                        {{ __('Registrations') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
                         {{ __('Reports') }}

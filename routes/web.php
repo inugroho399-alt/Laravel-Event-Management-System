@@ -56,6 +56,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
     Route::resource('events', AdminEventController::class)->only(['index', 'show', 'destroy']);
     Route::patch('events/{event}/status', [AdminEventController::class, 'updateStatus'])->name('events.update-status');
+    Route::get('registrations', [App\Http\Controllers\Admin\RegistrationController::class, 'index'])->name('registrations.index');
 });
 
 require __DIR__.'/auth.php';
