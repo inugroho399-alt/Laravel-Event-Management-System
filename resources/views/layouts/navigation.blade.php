@@ -13,9 +13,28 @@
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     @auth
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
+                        @if (Auth::user()->isAdmin())
+                            <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                                {{ __('Admin Dashboard') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                                {{ __('Users') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('admin.events.index')" :active="request()->routeIs('admin.events.*')">
+                                {{ __('All Events') }}
+                            </x-nav-link>
+                            <x-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
+                                {{ __('Reports') }}
+                            </x-nav-link>
+                        @elseif (Auth::user()->isOrganizer())
+                            <x-nav-link :href="route('organizer.dashboard')" :active="request()->routeIs('organizer.dashboard')">
+                                {{ __('Dashboard') }}
+                            </x-nav-link>
+                        @else
+                            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                                {{ __('Dashboard') }}
+                            </x-nav-link>
+                        @endif
                     @endauth
 
                     <x-nav-link :href="route('events.index')" :active="request()->routeIs('events.*')">
@@ -27,7 +46,7 @@
                             {{ __('My Registrations') }}
                         </x-nav-link>
 
-                        @if (Auth::user()->isOrganizer() || Auth::user()->isAdmin())
+                        @if (Auth::user()->isOrganizer())
                             <x-nav-link :href="route('organizer.events.index')" :active="request()->routeIs('organizer.events.*')">
                                 {{ __('Manage Events') }}
                             </x-nav-link>
@@ -100,9 +119,28 @@
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
             @auth
-                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    {{ __('Dashboard') }}
-                </x-responsive-nav-link>
+                @if (Auth::user()->isAdmin())
+                    <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.dashboard')">
+                        {{ __('Admin Dashboard') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.users.index')" :active="request()->routeIs('admin.users.*')">
+                        {{ __('Users') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.events.index')" :active="request()->routeIs('admin.events.*')">
+                        {{ __('All Events') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('organizer.reports.index')" :active="request()->routeIs('organizer.reports.*')">
+                        {{ __('Reports') }}
+                    </x-responsive-nav-link>
+                @elseif (Auth::user()->isOrganizer())
+                    <x-responsive-nav-link :href="route('organizer.dashboard')" :active="request()->routeIs('organizer.dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                @else
+                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        {{ __('Dashboard') }}
+                    </x-responsive-nav-link>
+                @endif
             @endauth
 
             <x-responsive-nav-link :href="route('events.index')" :active="request()->routeIs('events.*')">
@@ -114,7 +152,7 @@
                     {{ __('My Registrations') }}
                 </x-responsive-nav-link>
 
-                @if (Auth::user()->isOrganizer() || Auth::user()->isAdmin())
+                @if (Auth::user()->isOrganizer())
                     <x-responsive-nav-link :href="route('organizer.events.index')" :active="request()->routeIs('organizer.events.*')">
                         {{ __('Manage Events') }}
                     </x-responsive-nav-link>

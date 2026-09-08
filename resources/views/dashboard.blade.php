@@ -8,8 +8,17 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             @auth
-                @if (auth()->user()->isOrganizer() || auth()->user()->isAdmin())
-                    {{-- Organizers and admins are redirected to the dedicated organizer dashboard --}}
+                @if (auth()->user()->isAdmin())
+                    {{-- Administrators are redirected to the dedicated admin dashboard --}}
+                    <script>window.location.href = "{{ route('admin.dashboard') }}";</script>
+                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                        <div class="p-6 text-gray-900">
+                            Redirecting to Administrator dashboard…
+                            <a href="{{ route('admin.dashboard') }}" class="text-indigo-600 underline ml-1">Click here if not redirected.</a>
+                        </div>
+                    </div>
+                @elseif (auth()->user()->isOrganizer())
+                    {{-- Organizers are redirected to the dedicated organizer dashboard --}}
                     <script>window.location.href = "{{ route('organizer.dashboard') }}";</script>
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 text-gray-900">

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\EventController as AdminEventController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\Organizer\CheckInController as OrganizerCheckInController;
 use App\Http\Controllers\Organizer\DashboardController as OrganizerDashboardController;
@@ -45,6 +48,14 @@ Route::prefix('organizer')->name('organizer.')->middleware(['auth', 'role:organi
     Route::get('events/{event}/report/export-attendees', [OrganizerReportController::class, 'exportEventAttendees'])->name('events.reports.export-attendees');
     Route::get('events/{event}/check-in', [OrganizerCheckInController::class, 'create'])->name('events.check-in.create');
     Route::post('events/{event}/check-in', [OrganizerCheckInController::class, 'store'])->name('events.check-in.store');
+});
+
+// Admin Platform Oversight & User Management
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('users', AdminUserController::class)->only(['index', 'edit', 'update', 'destroy']);
+    Route::resource('events', AdminEventController::class)->only(['index', 'show', 'destroy']);
+    Route::patch('events/{event}/status', [AdminEventController::class, 'updateStatus'])->name('events.update-status');
 });
 
 require __DIR__.'/auth.php';
