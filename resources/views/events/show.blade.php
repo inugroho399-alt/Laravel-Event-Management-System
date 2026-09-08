@@ -63,6 +63,29 @@
                             <span class="text-xs font-medium text-gray-500">{{ $event->ticketTypes->count() }} type(s)</span>
                         </div>
 
+                        @php
+                            $userRegistration = Auth::check()
+                                ? $event->registrations()->where('user_id', Auth::id())->where('status', '!=', \App\Enums\RegistrationStatus::Cancelled->value)->first()
+                                : null;
+                        @endphp
+
+                        @if ($userRegistration)
+                            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <div>
+                                        <span class="font-semibold">You are registered for this event!</span>
+                                        <span class="text-xs text-emerald-600 block mt-0.5">Code: <strong>{{ $userRegistration->registration_code }}</strong> ({{ $userRegistration->ticketType->name }})</span>
+                                    </div>
+                                </div>
+                                <a href="{{ route('registrations.index') }}" class="text-xs font-semibold text-emerald-700 underline hover:text-emerald-900 whitespace-nowrap">
+                                    View in My Registrations &rarr;
+                                </a>
+                            </div>
+                        @endif
+
                         @if ($event->ticketTypes->count() > 0)
                             <div class="space-y-4">
                                 @foreach ($event->ticketTypes as $ticket)
@@ -84,18 +107,30 @@
                                                     {{ $ticket->price > 0 ? '$' . number_format($ticket->price, 2) : 'Free' }}
                                                 </div>
                                             </div>
-                                            @if ($ticket->isSoldOut())
-                                                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-500">
+                                            @if ($userRegistration)
+                                                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                                    Registered
+                                                </span>
+                                            @elseif ($ticket->isSoldOut())
+                                                <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-100 text-rose-800">
                                                     Sold Out
                                                 </span>
-                                            @elseif ($event->isRegistrationOpen())
-                                                <button type="button" disabled class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 text-white opacity-80 cursor-not-allowed">
-                                                    Registration (Phase 7)
-                                                </button>
-                                            @else
+                                            @elseif (! $event->isRegistrationOpen())
                                                 <span class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-500">
                                                     Registration Closed
                                                 </span>
+                                            @elseif (Auth::guest())
+                                                <a href="{{ route('login') }}" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-sm">
+                                                    Log in to Register
+                                                </a>
+                                            @else
+                                                <form method="POST" action="{{ route('events.register', $event) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="ticket_type_id" value="{{ $ticket->id }}">
+                                                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-sm">
+                                                        Register Now
+                                                    </button>
+                                                </form>
                                             @endif
                                         </div>
                                     </div>
