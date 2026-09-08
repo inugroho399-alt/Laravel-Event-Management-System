@@ -75,6 +75,7 @@
                                             {{ $event->registrations_count }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
+                                            <a href="{{ route('organizer.events.tickets.index', $event) }}" class="text-amber-600 hover:text-amber-800 font-medium">Tickets ({{ $event->ticket_types_count }})</a>
                                             <a href="{{ route('events.show', $event) }}" class="text-indigo-600 hover:text-indigo-900 font-medium">View</a>
                                             <a href="{{ route('organizer.events.edit', $event) }}" class="text-gray-600 hover:text-gray-900 font-medium">Edit</a>
                                             <form method="POST" action="{{ route('organizer.events.destroy', $event) }}" class="inline" onsubmit="return confirm('Are you sure you want to delete this event?');">
