@@ -23,7 +23,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
             {{-- ── KPI CARDS ───────────────────────────────────────────────── --}}
-            <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            <div class="grid grid-cols-2 lg:grid-cols-7 gap-4">
                 <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Total Events</div>
                     <div class="text-3xl font-bold text-gray-900 mt-1">{{ number_format($totalEvents) }}</div>
@@ -33,8 +33,16 @@
                     <div class="text-3xl font-bold text-emerald-600 mt-1">{{ number_format($publishedEvents) }}</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ticket Types</div>
+                    <div class="text-3xl font-bold text-violet-600 mt-1">{{ number_format($totalTicketTypes) }}</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Registrations</div>
                     <div class="text-3xl font-bold text-indigo-600 mt-1">{{ number_format($totalRegistrations) }}</div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</div>
+                    <div class="text-3xl font-bold text-sky-600 mt-1">{{ number_format($totalParticipants) }}</div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Attended</div>
@@ -132,6 +140,73 @@
                             Create your first event →
                         </a>
                     </div>
+                @endif
+            </div>
+
+            {{-- ── RECENT EVENTS ─────────────────────────────────────────────── --}}
+            <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-100">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-800">Recent Events</h3>
+                    <a href="{{ route('organizer.events.index') }}"
+                       class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">View all →</a>
+                </div>
+
+                @if ($recentEvents->count() > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100 text-sm">
+                            <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-3 text-left font-semibold">Event</th>
+                                    <th class="px-6 py-3 text-left font-semibold">Date</th>
+                                    <th class="px-6 py-3 text-left font-semibold">Status</th>
+                                    <th class="px-6 py-3 text-left font-semibold">Registrations</th>
+                                    <th class="px-6 py-3 text-left font-semibold">Attended</th>
+                                    <th class="px-6 py-3 text-right font-semibold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50 bg-white">
+                                @foreach ($recentEvents as $event)
+                                    @php
+                                        $statusClass = match ($event->status) {
+                                            \App\Enums\EventStatus::Completed => 'bg-blue-100 text-blue-800',
+                                            \App\Enums\EventStatus::Cancelled => 'bg-red-100 text-red-800',
+                                            \App\Enums\EventStatus::Ongoing   => 'bg-amber-100 text-amber-800',
+                                            \App\Enums\EventStatus::Published => 'bg-emerald-100 text-emerald-800',
+                                            default => 'bg-gray-100 text-gray-800',
+                                        };
+                                    @endphp
+                                    <tr class="hover:bg-gray-50/50 transition-colors">
+                                        <td class="px-6 py-4">
+                                            <div class="font-semibold text-gray-900">{{ $event->title }}</div>
+                                            <div class="text-xs text-gray-400">{{ $event->location ?: 'Online' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-600 text-xs">
+                                            <div>{{ $event->start_date->format('M d, Y') }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $statusClass }}">
+                                                {{ $event->status->label() }}
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                                            {{ number_format($event->active_registrations_count) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                                            {{ number_format($event->attended_count) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs space-x-3">
+                                            <a href="{{ route('organizer.events.registrations.index', $event) }}"
+                                               class="text-emerald-600 hover:text-emerald-800 font-medium">Attendees</a>
+                                            <a href="{{ route('organizer.events.edit', $event) }}"
+                                               class="text-gray-600 hover:text-gray-900 font-medium">Edit</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <div class="p-8 text-center text-sm text-gray-400">No past events yet.</div>
                 @endif
             </div>
 
@@ -263,3 +338,4 @@
         </div>
     </div>
 </x-app-layout>
+

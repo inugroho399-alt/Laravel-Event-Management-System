@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CheckIn;
 use App\Models\Event;
 use App\Models\Registration;
+use App\Models\TicketType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -44,6 +45,15 @@ class DashboardController extends Controller
             ->where('status', RegistrationStatus::Attended)
             ->count();
 
+        // Unique participants: distinct user_ids with non-cancelled registrations
+        $totalParticipants = Registration::whereIn('event_id', $eventIds)
+            ->where('status', '!=', RegistrationStatus::Cancelled)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // Total ticket types created across organizer's events
+        $totalTicketTypes = TicketType::whereIn('event_id', $eventIds)->count();
+
         // Revenue: sum of ticket_type.price × registrations (confirmed + attended)
         $totalRevenue = Registration::whereIn('registrations.event_id', $eventIds)
             ->whereIn('registrations.status', [
@@ -60,7 +70,7 @@ class DashboardController extends Controller
             ->pluck('total', 'status')
             ->toArray();
 
-        // ── UPCOMING EVENTS ───────────────────────────────────────────────────
+        // ── UPCOMING & RECENT EVENTS ──────────────────────────────────────────
 
         $upcomingEvents = (clone $eventScope)
             ->whereIn('status', [EventStatus::Published, EventStatus::Ongoing])
@@ -74,6 +84,21 @@ class DashboardController extends Controller
                 },
             ])
             ->orderBy('start_date')
+            ->limit(5)
+            ->get();
+
+        // Recent events: last 5 events by start_date (past or completed)
+        $recentEvents = (clone $eventScope)
+            ->where('start_date', '<', now())
+            ->withCount([
+                'registrations as active_registrations_count' => function ($q) {
+                    $q->where('status', '!=', RegistrationStatus::Cancelled);
+                },
+                'registrations as attended_count' => function ($q) {
+                    $q->where('status', RegistrationStatus::Attended);
+                },
+            ])
+            ->orderByDesc('start_date')
             ->limit(5)
             ->get();
 
@@ -98,9 +123,12 @@ class DashboardController extends Controller
             'publishedEvents',
             'totalRegistrations',
             'totalAttended',
+            'totalParticipants',
+            'totalTicketTypes',
             'totalRevenue',
             'eventStatusBreakdown',
             'upcomingEvents',
+            'recentEvents',
             'recentRegistrations',
             'recentCheckIns',
         ));
