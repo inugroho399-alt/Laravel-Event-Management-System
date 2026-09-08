@@ -7,6 +7,10 @@ use App\Models\Registration;
 use App\Models\TicketType;
 use App\Models\User;
 use App\Services\QrCodeService;
+use BaconQrCode\Common\ErrorCorrectionLevel;
+use BaconQrCode\Encoder\Encoder;
+use BaconQrCode\Renderer\PlainTextRenderer;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -147,5 +151,79 @@ class QrCodeGenerationTest extends TestCase
         $response = $this->actingAs($participantA)->get(route('registrations.show', $registrationB));
 
         $response->assertStatus(403);
+    }
+
+    public function test_every_registration_has_an_appropriate_unique_identifier(): void
+    {
+        $registrations = Registration::factory()->count(10)->create();
+        $codes = $registrations->pluck('registration_code');
+
+        // All codes are unique
+        $this->assertCount(10, $codes->unique());
+
+        // All codes match expected format: EVENT-REG-XXXXXXXX
+        foreach ($codes as $code) {
+            $this->assertMatchesRegularExpression('/^EVENT-REG-[A-Z0-9]{8}$/', $code);
+        }
+
+        // Database unique constraint is enforced
+        $this->expectException(QueryException::class);
+        Registration::factory()->create(['registration_code' => $codes->first()]);
+    }
+
+    public function test_qr_code_encodes_and_produces_standard_scannable_matrix(): void
+    {
+        $code = 'EVENT-REG-SCANTEST';
+        $service = app(QrCodeService::class);
+        $svg = $service->generateSvgString($code);
+
+        // Verify SVG has standard XML, dimensions, and path data
+        $this->assertStringContainsString('viewBox="0 0 200 200"', $svg);
+        $this->assertStringContainsString('fill="#000000"', $svg);
+        $this->assertStringContainsString('fill="#ffffff"', $svg);
+
+        // Verify underlying encoder matrix
+        $qr = Encoder::encode($code, ErrorCorrectionLevel::M());
+        $this->assertNotNull($qr->getMatrix());
+        $this->assertEquals(21, $qr->getMatrix()->getWidth());
+        $this->assertEquals(21, $qr->getMatrix()->getHeight());
+
+        // Verify text renderer can output terminal-scannable UTF-8 blocks
+        $textRenderer = new PlainTextRenderer;
+        $textQr = $textRenderer->render($qr);
+        $this->assertNotEmpty($textQr);
+    }
+
+    public function test_invalid_registration_identifiers_are_safely_rejected(): void
+    {
+        // Querying non-existent registration code returns null
+        $this->assertNull(Registration::where('registration_code', 'EVENT-REG-NONEXIST')->first());
+        $this->assertNull(Registration::where('registration_code', '')->first());
+        $this->assertNull(Registration::where('registration_code', 'MALICIOUS"OR 1=1--')->first());
+
+        // Requesting non-existent ID via web route returns 404
+        $user = User::factory()->participant()->create();
+        $this->actingAs($user)->get('/my-registrations/999999')->assertStatus(404);
+        $this->actingAs($user)->get('/my-registrations/invalid-format')->assertStatus(404);
+    }
+
+    public function test_qr_code_cannot_be_used_to_access_another_participants_private_data(): void
+    {
+        $attacker = User::factory()->participant()->create(['name' => 'Attacker User', 'email' => 'attacker@test.com']);
+        $victim = User::factory()->participant()->create(['name' => 'Victim User', 'email' => 'victim@secret.com']);
+
+        $registrationVictim = Registration::factory()->create([
+            'user_id' => $victim->id,
+            'registration_code' => 'EVENT-REG-VICTIM01',
+        ]);
+
+        // Attacker attempts to open victim's ticket using victim's registration record
+        $response = $this->actingAs($attacker)->get(route('registrations.show', $registrationVictim));
+
+        // Denied with 403 Forbidden
+        $response->assertStatus(403);
+        $response->assertDontSee('Victim User');
+        $response->assertDontSee('victim@secret.com');
+        $response->assertDontSee('EVENT-REG-VICTIM01');
     }
 }
