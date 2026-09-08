@@ -237,4 +237,98 @@ class DigitalTicketTest extends TestCase
         $response->assertRedirect(route('registrations.show', $registration));
         $this->assertEquals(RegistrationStatus::Cancelled, $registration->fresh()->status);
     }
+
+    public function test_successful_registration_produces_accessible_digital_ticket(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $event = Event::factory()->published()->create();
+        $ticket = TicketType::factory()->create(['event_id' => $event->id, 'quota' => 10]);
+
+        // Step 1: Register for event
+        $registerResponse = $this->actingAs($participant)->post(route('events.register', $event), [
+            'ticket_type_id' => $ticket->id,
+        ]);
+        $registerResponse->assertRedirect(route('registrations.index'));
+
+        // Step 2: Retrieve created registration
+        $registration = Registration::where('user_id', $participant->id)->where('event_id', $event->id)->first();
+        $this->assertNotNull($registration);
+
+        // Step 3: Access digital ticket
+        $ticketResponse = $this->actingAs($participant)->get(route('registrations.show', $registration));
+        $ticketResponse->assertStatus(200);
+        $ticketResponse->assertSee($event->title);
+        $ticketResponse->assertSee($ticket->name);
+        $ticketResponse->assertSee($registration->registration_code);
+    }
+
+    public function test_ticket_cannot_expose_another_participants_ticket_data(): void
+    {
+        $participantA = User::factory()->participant()->create(['name' => 'Alice Private', 'email' => 'alice@private.com']);
+        $participantB = User::factory()->participant()->create(['name' => 'Bob Secret', 'email' => 'bob@secret.com']);
+
+        $registrationB = Registration::factory()->create([
+            'user_id' => $participantB->id,
+            'registration_code' => 'EVENT-REG-BOB12345',
+        ]);
+
+        // Participant A tries to access Participant B's ticket
+        $response = $this->actingAs($participantA)->get(route('registrations.show', $registrationB));
+
+        // Must return 403 Forbidden
+        $response->assertStatus(403);
+        $response->assertDontSee('Bob Secret');
+        $response->assertDontSee('bob@secret.com');
+        $response->assertDontSee('EVENT-REG-BOB12345');
+    }
+
+    public function test_ticket_view_contains_responsive_mobile_layout_elements(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $registration = Registration::factory()->create(['user_id' => $participant->id]);
+
+        $response = $this->actingAs($participant)->get(route('registrations.show', $registration));
+
+        $response->assertStatus(200);
+
+        // Responsive grid and flex layout classes for mobile/tablet/desktop
+        $response->assertSee('flex flex-col sm:flex-row', false);
+        $response->assertSee('grid grid-cols-1 md:grid-cols-2', false);
+        $response->assertSee('grid grid-cols-1 sm:grid-cols-3', false);
+        $response->assertSee('@media print', false);
+        $response->assertSee('window.print()', false);
+    }
+
+    public function test_invalid_and_malformed_registration_ids_are_handled_safely(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        // Non-existent numeric ID
+        $this->actingAs($participant)->get('/my-registrations/888888')->assertStatus(404);
+
+        // Malformed non-numeric ID
+        $this->actingAs($participant)->get('/my-registrations/invalid-uuid-or-slug')->assertStatus(404);
+    }
+
+    public function test_ticket_status_is_displayed_accurately_for_attended_status(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $organizer = User::factory()->organizer()->create();
+        $registration = Registration::factory()->create([
+            'user_id' => $participant->id,
+            'status' => RegistrationStatus::Attended,
+        ]);
+
+        CheckIn::factory()->create([
+            'registration_id' => $registration->id,
+            'checked_in_by' => $organizer->id,
+            'checked_in_at' => now(),
+        ]);
+
+        $response = $this->actingAs($participant)->get(route('registrations.show', $registration));
+
+        $response->assertStatus(200);
+        $response->assertSee('Attended');
+        $response->assertSee('Checked In');
+    }
 }
