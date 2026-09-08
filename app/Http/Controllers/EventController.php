@@ -14,11 +14,11 @@ class EventController extends Controller
      */
     public function index(Request $request): View
     {
-        $search = $request->string('search')->trim();
+        $search = $request->filled('search') ? trim((string) $request->input('search')) : '';
 
         $events = Event::published()
             ->with(['organizer', 'ticketTypes'])
-            ->when($search->isNotEmpty(), function ($query) use ($search) {
+            ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
                         ->orWhere('location', 'like', "%{$search}%")

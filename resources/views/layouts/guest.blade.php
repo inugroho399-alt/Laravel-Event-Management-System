@@ -14,16 +14,20 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans text-gray-900 antialiased">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
-            <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+    <body class="font-sans text-slate-900 antialiased bg-slate-50">
+        <div class="min-h-screen flex flex-col sm:justify-center items-center px-4 py-8 sm:py-12">
+            <div class="mb-6">
+                <a href="{{ route('home') }}" class="focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-xl p-1 inline-block">
+                    <x-application-logo class="w-48 h-12 text-slate-800" />
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
+            <div class="w-full sm:max-w-md p-6 sm:p-8 bg-white shadow-sm border border-slate-100 rounded-2xl">
                 {{ $slot }}
+            </div>
+
+            <div class="mt-8 text-center text-xs text-slate-400">
+                &copy; {{ date('Y') }} EventPulse Management System. All rights reserved.
             </div>
         </div>
     </body>

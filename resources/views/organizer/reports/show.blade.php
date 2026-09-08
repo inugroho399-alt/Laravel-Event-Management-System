@@ -17,18 +17,7 @@
                     <span>&bull;</span>
                     <span>{{ $event->location ?: 'Online Event' }}</span>
                     <span>&bull;</span>
-                    @php
-                        $statusClass = match ($event->status) {
-                            \App\Enums\EventStatus::Published => 'bg-emerald-100 text-emerald-800',
-                            \App\Enums\EventStatus::Ongoing   => 'bg-amber-100 text-amber-800',
-                            \App\Enums\EventStatus::Completed => 'bg-blue-100 text-blue-800',
-                            \App\Enums\EventStatus::Cancelled => 'bg-red-100 text-red-800',
-                            default => 'bg-gray-100 text-gray-800',
-                        };
-                    @endphp
-                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold {{ $statusClass }}">
-                        {{ $event->status->label() }}
-                    </span>
+                    <x-status-badge :status="$event->status" />
                 </div>
             </div>
 

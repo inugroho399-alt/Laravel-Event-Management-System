@@ -97,17 +97,7 @@
                                             </a>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            @php
-                                                $badgeClasses = match($registration->status) {
-                                                    \App\Enums\RegistrationStatus::Confirmed => 'bg-emerald-100 text-emerald-800',
-                                                    \App\Enums\RegistrationStatus::Attended => 'bg-blue-100 text-blue-800',
-                                                    \App\Enums\RegistrationStatus::Cancelled => 'bg-rose-100 text-rose-800',
-                                                    default => 'bg-gray-100 text-gray-800',
-                                                };
-                                            @endphp
-                                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold {{ $badgeClasses }}">
-                                                {{ $registration->status->label() }}
-                                            </span>
+                                            <x-status-badge :status="$registration->status" />
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-xs">
                                             @if ($registration->checkIn)
