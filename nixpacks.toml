@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["php82", "php82Packages.composer", "nodejs_20"]
+
+[phases.build]
+cmds = ["npm ci", "npm run build"]
+
+[start]
+cmd = "bash start.sh"
